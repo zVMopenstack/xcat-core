@@ -170,9 +170,9 @@ function loadServiceProvisionPage(tabId) {
 
     // Create radio buttons for platforms
     var hwList = $('<ol>Platforms available:</ol>');
-    var esx = $('<li><input type="radio" name="hw" value="esx" checked/>ESX</li>');
-    var kvm = $('<li><input type="radio" name="hw" value="kvm"/>KVM</li>');
-    var zvm = $('<li><input type="radio" name="hw" value="zvm"/>z\/VM</li>');
+    var esx = $('<li><input type="radio" name="hw" value="esx" disabled/>ESX</li>');
+    var kvm = $('<li><input type="radio" name="hw" value="kvm" disabled/>KVM</li>');
+    var zvm = $('<li><input type="radio" name="hw" value="zvm" checked/>z\/VM</li>');
     
     hwList.append(esx);
     hwList.append(kvm);
@@ -545,24 +545,6 @@ function loadNodesTable(data) {
         }
     });
     
-    // Turn monitoring on
-    var monitorOnLnk = $('<a>Monitor on</a>');
-    monitorOnLnk.click(function() {
-        var tgtNodes = getNodesChecked(nodesDTId);
-        if (tgtNodes) {
-            monitorNode(tgtNodes, 'on');
-        }
-    });
-
-    // Turn monitoring off
-    var monitorOffLnk = $('<a>Monitor off</a>');
-    monitorOffLnk.click(function() {
-        var tgtNodes = getNodesChecked(nodesDTId);
-        if (tgtNodes) {
-            monitorNode(tgtNodes, 'off');
-        }
-    });
-    
     // Clone
     var cloneLnk = $('<a>Clone</a>');
     cloneLnk.click(function() {
@@ -639,7 +621,7 @@ function loadNodesTable(data) {
         });    
     });
     
-    var actionMenu = createMenu([cloneLnk, deleteLnk, monitorOnLnk, monitorOffLnk, powerOnLnk, powerOffLnk, powerSoftoffLnk, unlockLnk]);
+    var actionMenu = createMenu([cloneLnk, deleteLnk, powerOnLnk, powerOffLnk, powerSoftoffLnk, unlockLnk]);
     var menu = createMenu([[actionsLnk, actionMenu], refreshLnk]);
     menu.superfish();
     actionBar.append(menu);

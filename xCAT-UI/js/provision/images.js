@@ -48,7 +48,7 @@ function loadImages(data) {
     // Data returned
     var rsp = data.rsp;
     if (rsp[0].indexOf('Could not find any object definitions') > -1) {
-    	rsp = new Array();
+        rsp = new Array();
     }
     
     // Image attributes hash
@@ -198,7 +198,7 @@ function loadImages(data) {
 
     // Turn table into a datatable
     var myDataTable = $('#' + imgTableId).dataTable({
-    	'iDisplayLength': 50,
+        'iDisplayLength': 50,
         'bLengthChange': false,
         "bScrollCollapse": true,
         "sScrollY": "400px",
@@ -388,9 +388,9 @@ function openAddImageDialog() {
     // Create inputs for image attributes
     var imageName = $('<div><label>Image name:</label><input type="text" name="imagename" disabled="disabled" title="The name of this xCAT OS image definition"/></div>');
     var imageType = $('<div><label>Image type:</label><input type="text" name="imagetype" value="linux" title="The type of operating system image this definition represents"/></div>');
-    var architecture = $('<div><label>OS architecture:</label><input type="text" name="osarch" title="The hardware architecture of this image. Valid values: x86_64, x86, ia64, ppc64, and s390x."/></div>');
+    var architecture = $('<div><label>OS architecture:</label><input type="text" name="osarch" title="The hardware architecture of this image. Valid values: s390x."/></div>');
     var osName = $('<div><label>OS name:</label><input type="text" name="osname" value="Linux" title="Operating system name"/></div>');
-    var osVersion = $('<div><label>OS version:</label><input type="text" name="osvers" title="The operating system deployed on this node. Valid values: rhel*, centos*, fedora*, sles* (where * is the version #)."/></div>');    
+    var osVersion = $('<div><label>OS version:</label><input type="text" name="osvers" title="The operating system deployed on this node. Valid values: rhel*, sles* (where * is the version #)."/></div>');
     var profile = $('<div><label>Profile:</label><input type="text" name="profile" title="The node usage category"/></div>');
     var provisionMethod = $('<div><label>Provision method:</label></div>');
     var provisionSelect = $('<select name="provmethod" title="The provisioning method for node deployment">'
@@ -502,7 +502,7 @@ function openAddImageDialog() {
     imageAttr.append(imageName, imageType, architecture, osName, osVersion, profile, provisionMethod);
     optionAttr.append(otherpkgDirectory, packageDirectory, packageList, template);
         
-	// Generate tooltips
+    // Generate tooltips
     addImageForm.find('div input[title],select[title]').tooltip({
         position: "center right",
         offset: [-2, 10],
@@ -1296,9 +1296,9 @@ function openCopyCdDialog() {
     copyLinuxForm.append(iso);
     
     // Create architecture input
-    copyLinuxForm.append('<div><label>Architecture:</label><input type="text" id="arch" name="arch" title="The hardware architecture of this node. Valid values: x86_64, x86, ia64, ppc64, and s390x."/></div>');
+    copyLinuxForm.append('<div><label>Architecture:</label><input type="text" id="arch" name="arch" title="The hardware architecture of this node. Valid values: s390x."/></div>');
     // Create distribution input
-    copyLinuxForm.append('<div><label>Distribution:</label><input type="text" id="distro" name="distro" title="The operating system name. Valid values: rhel*, centos*, fedora*, sles* (where * is the version #)."/></div>');
+    copyLinuxForm.append('<div><label>Distribution:</label><input type="text" id="distro" name="distro" title="The operating system name. Valid values: rhel*, sles* (where * is the version #).<br>Note: dashes are parsed to fill in distro, profile, os, and arch fields in xCAT table."/></div>');
             
     /**
      * Browse
@@ -1329,7 +1329,7 @@ function openCopyCdDialog() {
         basePath : '/install' // Limit user to only install directory
     });
     
-	// Generate tooltips
+    // Generate tooltips
     copyLinuxForm.find('div input[title],select[title]').tooltip({
         position: "center right",
         offset: [-2, 10],

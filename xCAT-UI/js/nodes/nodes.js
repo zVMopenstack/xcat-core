@@ -1,11 +1,13 @@
 /**
  * Global variables
- */
+ *Test Git update in MCP_DEV branch   */
 var nodesTab; // Nodes tabs
 var origAttrs = new Object(); // Original node attributes
 var nodeAttrs; // Node attributes
 var nodesList; // Node list
 var nodesTableId = 'nodesDatatable'; // Nodes datatable ID
+var nodesTabInfoBar;
+var builtInXCAT = 1; // 1 means xCAT shipped with zVM
 
 /**
  * Set node tab
@@ -25,6 +27,26 @@ function setNodesTab(tab) {
  */
 function getNodesTab() {
     return nodesTab;
+}
+
+/**
+ * Set node tab info bar. Used by zvmUtils.js
+ * 
+ * @param tab
+ *            infobar object
+ * @return Nothing
+ */
+function setNodesTabInfoBar(tabinfo) {
+    nodesTabInfoBar = tabinfo;
+}
+
+/**
+ * Get node tab info bar
+ * 
+ * @return Tab info bar object
+ */
+function getNodesTabInfoBar() {
+    return nodesTabInfoBar;
 }
 
 /**
@@ -237,7 +259,9 @@ function drawNodesArea(targetgroup, cmdargs, message){
     $('#nodes').append(tab.object());
     tab.add('summaryTab', 'Summary', '', false);
     tab.add('nodesTab', 'Nodes', '', false);
-    tab.add('graphTab', 'Graphic', '', false);
+    if (builtInXCAT == 0) {
+        tab.add('graphTab', 'Graphic', '', false);
+    }
            
     // Load nodes table when tab is selected
     $('#nodesPageTabs').bind('tabsselect', function(event, ui) {
@@ -313,12 +337,13 @@ function drawNodesArea(targetgroup, cmdargs, message){
                 }
             });
         }
-        
+
         // Load graphical layout when tab is selected
-        else if (!$('#graphTab').children().length && ui.index == 2) {
+        else if ((builtInXCAT == 0) && (!$('#graphTab').children().length && ui.index == 2)) {
             // For the graphical tab, check the graphical data first
             createPhysicalLayout(nodesList);
         }
+
     });
         
     // Get last view (if any)
@@ -357,16 +382,24 @@ function mkAddNodeLink() {
         // Create form to add node
         var addNodeForm = $('<div class="form"></div>');
         addNodeForm.append(info);
-        addNodeForm.append('<div><label>Hardware management:</label>'
-            + '<select name="mgt">'
-                + '<option value="esx">ESX</option>'
-                + '<option value="kvm">KVM</option>'
-                + '<option value="zvm">z\/VM</option>'
-                + '<option value="ipmi">iDataPlex</option>' 
-                + '<option value="blade">BladeCenter</option>'
-                + '<option value="hmc">System p</option>'    // Documentation refers to 'IBM System p' (where p is NOT capitalized)
-            + '</select>'
-        + '</div>');
+        if (builtInXCAT == 0) {
+            addNodeForm.append('<div><label>Hardware management:</label>'
+                + '<select name="mgt">'
+                    + '<option value="esx">ESX</option>'
+                    + '<option value="kvm">KVM</option>'
+                    + '<option value="zvm">z\/VM</option>'
+                    + '<option value="ipmi">iDataPlex</option>' 
+                    + '<option value="blade">BladeCenter</option>'
+                    + '<option value="hmc">System p</option>'    // Documentation refers to 'IBM System p' (where p is NOT capitalized)
+                + '</select>'
+            + '</div>');
+        } else {
+            addNodeForm.append('<div><label>Hardware management:</label>'
+                + '<select name="mgt">'
+                    + '<option value="zvm">z\/VM</option>'
+                + '</select>'
+            + '</div>');
+        }    
         
         // Create advanced link to set advanced node properties
         var advanced = $('<div></div>');
@@ -632,6 +665,8 @@ function loadNodes(data) {
     // Create info bar for nodes tab
     var info = createInfoBar('Double-click on a cell to edit a node\'s properties.  Click outside the table to save changes.  Hit the Escape key to ignore changes.');
     $('#nodesTab').append(info);
+    info.id = 'NodesInfoBar';
+    setNodesTabInfoBar(info);
 
     // Create action bar
     var actionBar = $('<div class="actionBar"></div>').css("width", "400px");
@@ -654,7 +689,27 @@ function loadNodes(data) {
     powerOffLnk.click(function() {
         var tgtNodes = getNodesChecked(nodesTableId);
         if (tgtNodes) {
-            powerNode(tgtNodes, 'off');
+
+            var msg = 'Do you want to power off: ' + tgtNodes + '?';
+            // Open dialog to confirm
+            var confirmDialog = $('<div><p>' + msg + '</p></div>');                   
+            confirmDialog.dialog({
+                title:'Confirm',
+                 modal: true,
+                 close: function(){
+                     $(this).remove();
+                 },
+                 width: 400,
+                 buttons: {
+                     "Ok": function(){
+                         powerNode(tgtNodes, 'off');
+                         $(this).dialog("close");
+                     },
+                     "Cancel": function() {
+                         $(this).dialog("close");
+                     }
+                 }
+            });    
         }
     });
     
@@ -663,27 +718,47 @@ function loadNodes(data) {
     powerSoftoffLnk.click(function() {
         var tgtNodes = getNodesChecked(nodesTableId);
         if (tgtNodes) {
-            powerNode(tgtNodes, 'softoff');
+            var msg = 'Do you want to shutdown: ' + tgtNodes + '?';
+            // Open dialog to confirm
+            var confirmDialog = $('<div><p>' + msg + '</p></div>');                   
+            confirmDialog.dialog({
+                title:'Confirm',
+                 modal: true,
+                 close: function(){
+                     $(this).remove();
+                 },
+                 width: 400,
+                 buttons: {
+                     "Ok": function(){
+                         powerNode(tgtNodes, 'softoff');
+                         $(this).dialog("close");
+                     },
+                     "Cancel": function() {
+                         $(this).dialog("close");
+                     }
+                 }
+            });    
         }
     });
-    
-    // Turn monitoring on
-    var monitorOnLnk = $('<a>Monitor on</a>');
-    monitorOnLnk.click(function() {
-        var tgtNodes = getNodesChecked(nodesTableId);
-        if (tgtNodes) {
-            monitorNode(tgtNodes, 'on');
-        }
-    });
+    if (builtInXCAT == 0) {
+        // Turn monitoring on
+        var monitorOnLnk = $('<a>Monitor on</a>');
+        monitorOnLnk.click(function() {
+            var tgtNodes = getNodesChecked(nodesTableId);
+            if (tgtNodes) {
+                monitorNode(tgtNodes, 'on');
+            }
+        });
 
-    // Turn monitoring off
-    var monitorOffLnk = $('<a>Monitor off</a>');
-    monitorOffLnk.click(function() {
-        var tgtNodes = getNodesChecked(nodesTableId);
-        if (tgtNodes) {
-            monitorNode(tgtNodes, 'off');
-        }
-    });
+        // Turn monitoring off
+        var monitorOffLnk = $('<a>Monitor off</a>');
+        monitorOffLnk.click(function() {
+            var tgtNodes = getNodesChecked(nodesTableId);
+            if (tgtNodes) {
+                monitorNode(tgtNodes, 'off');
+            }
+        });
+    }    
 
     // Clone
     var cloneLnk = $('<a>Clone</a>');
@@ -704,9 +779,15 @@ function loadNodes(data) {
                 case "zvm":
                     plugin = new zvmPlugin();
                     break;
+            }        
+            if (mgt == "zvm") {
+                var nodeOS = getNodeAttr(tgtNodes[i], 'os');
+                var nodeArch = getNodeAttr(tgtNodes[i], 'arch');
+                plugin.loadClonePage(tgtNodes[i], nodeOS, nodeArch);
+            } else {
+                plugin.loadClonePage(tgtNodes[i]);
             }
             
-            plugin.loadClonePage(tgtNodes[i]);
         }
     });
 
@@ -719,13 +800,67 @@ function loadNodes(data) {
         }
     });
 
-    // Unlock
+    // Unlock Function
     var unlockLnk = $('<a>Unlock</a>');
     unlockLnk.click(function() {
-        var tgtNodes = getNodesChecked(nodesTableId);
-        if (tgtNodes) {
-            loadUnlockPage(tgtNodes);
-        }
+    
+        // Get the "master" value from the site table.
+        var siteMaster;
+        $.ajax({
+            url : 'lib/cmd.php',
+            dataType : 'json',
+            data : {
+                cmd : 'tabdump',
+                tgt : '',
+                args : 'site',
+                msg : 'cmd=tabdump site;'
+            },
+
+            success : function(data) {
+                var outId = $(data.msg);
+                var props = data.rsp;
+                if ( jQuery.isArray(data.rsp) ) {
+                    for (var i in data.rsp) {
+                        if ( data.rsp[i].indexOf('"master"') == 0 ) {
+                            siteMaster = data.rsp[i].slice( 10, -3 );
+                        }
+                    }
+                } else {
+                    if ( data.rsp.indexOf('"master"') == 0 ) {
+                        siteMaster = data.rsp.slice( 10, -3 );
+                    }
+                }
+
+                // Process the nodes that were checked.
+                var tgtNodes = getNodesChecked(nodesTableId).split(',');
+                var normalNodes = '';
+                var mnNode = '';
+                for (var i in tgtNodes) {
+                    var nodeIP = getNodeAttr( tgtNodes[i], 'ip' );
+                    if ( nodeIP == siteMaster ) {
+                        if ( mnNode == '' ) {
+                            // Only one xCAT node will have the same address as
+                            // the site master IP address and this is the
+                            // xCAT MN.
+                            mnNode = tgtNodes[i];
+                        }
+                     } else {
+                        if ( normalNodes == '' ) {
+                            normalNodes = tgtNodes[i];
+                        } else {
+                            normalNodes = normalNodes + "," + tgtNodes[i];
+                        }
+                    }
+                }
+                
+                if ( normalNodes != '' ) {
+                    loadUnlockPage( normalNodes );
+                }
+                if ( mnNode != '' ) {
+                    loadUnlockNonNodesPage( mnNode );
+                }
+            }
+        });
     });
 
     // Run script
@@ -734,6 +869,8 @@ function loadNodes(data) {
         var tgtNodes = getNodesChecked(nodesTableId);
         if (tgtNodes) {            
             loadScriptPage(tgtNodes);
+        } else {
+            openDialog('warn', "No nodes checked!");
         }
     });
     
@@ -742,8 +879,10 @@ function loadNodes(data) {
     migrateLnk.click(function() {
         var tgtNodes = getNodesChecked(nodesTableId).split(',');
         var mgt = "", tmp = "";
+        var fromhcp = "";
         for (var i in tgtNodes) {
             tmp = getNodeAttr(tgtNodes[i], 'mgt');
+            fromhcp += getNodeAttr(tgtNodes[i], 'hcp') + ',';
             if (!mgt) {
                 mgt = tmp
             } else {
@@ -768,8 +907,11 @@ function loadNodes(data) {
                 plugin = new zvmPlugin();
                 break;
         }
-        
-        plugin.loadMigratePage(tgtNodes);
+        if (mgt == "zvm") {
+            plugin.loadMigratePage(tgtNodes, fromhcp);
+        } else {
+            plugin.loadMigratePage(tgtNodes);
+        }
     });
 
     // Update
@@ -815,6 +957,33 @@ function loadNodes(data) {
         var tgtNodes = getNodesChecked(nodesTableId);
         if (tgtNodes) {
             loadRconsPage(tgtNodes);
+        }
+    });
+    
+    // Discovery
+    var discoverLnk = $('<a>Discover systems</a>');
+    discoverLnk.bind( 'click', function(event) {
+        var tgtNodes = getNodesChecked(nodesTableId).split(',');
+        if ( tgtNodes ) {
+            var hosts;
+            for (var i in tgtNodes) {
+                var hostType = getNodeAttr( tgtNodes[i], 'hosttype' );
+                if ( hostType == 'zvm' ) {
+                    if ( hosts ) {
+                        hosts += "," + tgtNodes[i];
+                    } else {
+                        hosts = tgtNodes[i];
+                    }
+                    
+                } else {
+                    openDialog('warn', tgtNodes[i] + " does not have a hosttype of 'zvm': " + hostType );
+                }
+            }
+            if ( hosts ) {
+                discoverVMNodes( hosts );
+            }
+        } else {
+            openDialog('warn', "No nodes checked!");
         }
     });
     
@@ -881,21 +1050,98 @@ function loadNodes(data) {
     
     // Actions
     var actionsLnk = '<a>Actions</a>';
-    var actsMenu = createMenu([cloneLnk, deleteLnk, migrateLnk, monitorOnLnk, monitorOffLnk, powerOnLnk, powerOffLnk, scriptLnk, powerSoftoffLnk]);
+    if (builtInXCAT == 0) {
+        if (group == 'hosts') {
+            var actsMenu = createMenu([deleteLnk]);
+        } else {
+            var actsMenu = createMenu([cloneLnk, deleteLnk, migrateLnk, monitorOnLnk, monitorOffLnk, powerOnLnk, powerOffLnk, scriptLnk, powerSoftoffLnk]);
+        }
+    } else {
+        if (group == 'hosts') {
+            var actsMenu = createMenu([deleteLnk]);
+        } else {
+            var actsMenu = createMenu([cloneLnk, deleteLnk, migrateLnk, powerOnLnk, powerOffLnk, scriptLnk, powerSoftoffLnk]);
+        }   
+    }
 
     // Configurations
     var configLnk = '<a>Configuration</a>';
-    var configMenu = createMenu([editProps, logLnk, installMonLnk, rscanLnk, unlockLnk, updateLnk]);
+    if (builtInXCAT == 0) {
+        if (group == 'hosts') {
+            var configMenu = createMenu([editProps]);
+        } else {
+            var configMenu = createMenu([editProps, logLnk, installMonLnk, rscanLnk, unlockLnk, updateLnk]);
+        }
+    } else {  
+        if (group == 'hosts') {
+            var configMenu = createMenu([ discoverLnk, editProps ]); 
+        } else {
+            var configMenu = createMenu([editProps, logLnk, rscanLnk, unlockLnk, updateLnk]); 
+        }
+    }
 
     // Provision
     var provLnk = '<a>Provision</a>';
-    var provMenu = createMenu([boot2NetworkLnk, rcons, setBootStateLnk, provisionLnk]);
+    if (builtInXCAT == 0) {
+        var provMenu = createMenu([boot2NetworkLnk, rcons, setBootStateLnk, provisionLnk]);
+    } else { 
+        var provMenu = createMenu([boot2NetworkLnk, setBootStateLnk]);
+    }   
+
+    /**
+     * Refresh button
+     */
+    var refreshBtn = createButton('Refresh');
+    refreshBtn.click(function() {
+      // Remove any warning messages
+      $(this).parents('.ui-tabs-panel').find('.ui-state-error').remove();
+
+      var zhcpsCheck = $.cookie('zhcps').split(',');
+      var zhcpHash = new Object();
+      for (var h in zhcpsCheck) {
+          if (!zhcpHash[zhcpsCheck[h]]) {
+
+              zhcpHash[zhcpsCheck[h]] = 1;
+              if (typeof console == "object"){
+                    console.log("zhcp check for <"+zhcpsCheck[h]+">");
+              }
+
+              // Check if SMAPI is online
+              $.ajax({
+                  url : 'lib/cmd.php',
+                  dataType : 'json',
+                  data : {
+                      cmd : 'lsvm',
+                      tgt : zhcpsCheck[h],
+                      args : '',
+                      msg : 'group=refreshgroups' + ';hcp=' + zhcpsCheck[h]
+                  },
+
+                  // Load hardware control point specific info
+                  // Get disk pools and network names
+                  success : loadHcpInfo
+              });
+          }
+      }
+
+      window.location.reload();
+    });
+    refreshBtn.css({'width': '80px'});
+    refreshBtn.css({'height': '27px'});
+    //refreshBtn.css('vertical-align', 'top');
+    refreshBtn.css({'align': 'top'});
 
     // Create an action menu
-    var actionsMenu = createMenu([ [ actionsLnk, actsMenu ], [ configLnk, configMenu ],  [ provLnk, provMenu ] ]);
+    var actionsMenu;
+    if (group == 'hosts') {
+        actionsMenu = createMenu([ [ actionsLnk, actsMenu ], [ configLnk, configMenu ] ]);
+    } else {
+        actionsMenu = createMenu([ [ actionsLnk, actsMenu ], [ configLnk, configMenu ],  [ provLnk, provMenu ] ]);
+    }
     actionsMenu.superfish();
     actionsMenu.css('display', 'inline-block');
     actionBar.append(actionsMenu);
+    actionBar.append(refreshBtn);
     
     // Set correct theme for action menu
     actionsMenu.find('li').hover(function() {
@@ -963,9 +1209,7 @@ function loadNodes(data) {
     
     // Create enough space for loader to be displayed
     // Center align power, ping, and comments
-    $('#' + nodesTableId + ' td:nth-child(3),td:nth-child(4),td:nth-child(5)').css({
-        'text-align': 'center'
-    });
+    $('#' + nodesTableId + ' td:nth-child(3),td:nth-child(4),td:nth-child(5)').css({'text-align': 'center'});
     
     // No minimum width for comments column
     $('#' + nodesTableId + ' tbody tr td:nth-child(6)').css('text-align', 'center');
@@ -982,10 +1226,16 @@ function loadNodes(data) {
     });
     
     // Create a division to hold actions menu
-    var menuDiv = $('<div id="' + nodesTableId + '_menuDiv" class="menuDiv"></div>');
-    $('#' + nodesTableId + '_wrapper').prepend(menuDiv);
+    var menuDiv = $('<div id="' + nodesTableId + '_menuDiv" class="menuDiv"></div>'); // # <div id=nodesDataTable_menuDiv 
+    $('#' + nodesTableId + '_wrapper').prepend(menuDiv);  // #nodesDataTable_wrapper
+    actionBar.css({'height': '30px'});
+    actionBar.css('vertical-align', 'top');
     menuDiv.append(actionBar);    
-    $('#' + nodesTableId + '_filter').appendTo(menuDiv);
+    
+    $('#' + nodesTableId + '_filter').css({'width': '240px'});
+    $('#' + nodesTableId + '_filter').css({'height': '40px'});
+    $('#' + nodesTableId + '_filter').css('vertical-align', 'middle');
+    $('#' + nodesTableId + '_filter').appendTo(menuDiv);  // #nodesDataTable_filter
     
     // Create tooltip for status
     var tooltipConf = {
@@ -1308,7 +1558,7 @@ function addNodes2Table(data) {
         }
         
         // Update row
-        datatable.fnUpdate(rows[nodeRowPos], nodeRowPos, 0, false);
+        datatable.fnUpdate(rows[nodeRowPos], parseInt(nodeRowPos), undefined, false);
         
         // Insert node comments
         // This is done after datatable is updated because
@@ -1801,6 +2051,295 @@ function loadUnlockPage(tgtNodes) {
     tab.select(newTabId);
 }
 
+function loadUnlockNonNodesPage( tgtNodes ) {
+
+    // Get nodes tab
+    var tab = getNodesTab();
+    var fs, legend;
+
+    // Generate new tab ID
+    var instance = 0;
+    var newTabId = 'unlockNonNodesTab' + instance;
+    while ($('#' + newTabId).length) {
+        // If one already exists, generate another one
+        instance = instance + 1;
+        newTabId = 'unlockNonNodesTab' + instance;
+    }
+
+    // Create info bar and status bar
+    var infoBar = createInfoBar( 'Unlock systems that have not been defined to xCAT. Either:<br>' +
+                                 '-Create a script to install the xCAT Management Node\'s public key on the target systems, or<br>' +
+                                 '-Unlock system(s) directly using their IP address(es) ' +
+                                 '(Specify multiple systems by separating the addresses with a comma),<br>' +
+                                 '-Show the xCAT Management Node\'s public key to use to unlock the system.' );
+
+    var statBarId = 'unlockNonNodesStatusBar' + instance;
+    var statBar = createStatusBar(statBarId).hide();
+    var loader = createLoader( '' );
+    statBar.find('div').append( loader );
+
+    // Create unlock form and put info and status bars on the form
+    var unlockNonNodesForm = $( '<div class="form"></div>' );
+    unlockNonNodesForm.append( infoBar, statBar );
+
+    // Create 'Create an Unlock Script' fieldset
+    fs = $( '<fieldset></fieldset>' );
+    legend = $( '<legend>Create an Unlock Script</legend>' );
+    fs.append( legend );
+    unlockNonNodesForm.append( fs );
+
+    // Create Script bar
+    var scriptBarId = 'unlockNonNodesScriptBar' + instance;
+    var scriptBar = createStatusBar(scriptBarId).hide();
+    unlockNonNodesForm.append( scriptBar );
+
+    var createBtn = createButton( 'Create Script' );
+    createBtn.css({
+        'width': '200px',
+        'display': 'block'
+    });
+
+    createBtn.click(function() {
+        // Remove any warning messages
+        $(this).parents('.ui-tabs-panel').find('.ui-state-error').remove();
+
+        // Get the SSH keys for a non-node
+        $.ajax( {
+            url : 'lib/cmd.php',
+            dataType : 'json',
+            data : {
+                cmd  : 'webrun',
+                tgt  : '',
+                args : 'unlockshow;' + tgtNodes + ';script;',
+                msg  : 'out=' + statBarId + ';scriptBar=' + scriptBarId +';cmd=unlock;tgt=' + tgtNodes
+            },
+
+                success : updateScriptBar
+            });
+
+            // Show status bar
+            statBar.show();
+    });
+
+    unlockNonNodesForm.append( createBtn );
+
+    // Create 'Unlock a system using the root password' Script fieldset
+    fs = $( '<fieldset></fieldset>' );
+    legend = $( '<legend>Unlock a system using the root password</legend>' );
+    fs.append( legend );
+    unlockNonNodesForm.append( fs );
+
+    var vmAttr = $('<div style="display: inline-table; vertical-align: middle;"></div>' );
+    fs.append($('<div style="display: inline-table; vertical-align: middle;"><img src="images/provision/computer.png"></img></div>'));
+    fs.append( vmAttr );
+
+    vmAttr.append( '<div><label>IP Address:</label><input type="text" id="ip" name="ip" value="" title="The IP address of the system to unlock."/></div>' );
+    vmAttr.append( '<div><label>Password:</label><input type="password" id="password" name="password" title="The root password to unlock this system."/></div>' );
+
+    /**
+     * Unlock button for non-nodes
+     */
+    var unlockBtn = createButton('Unlock');
+    unlockBtn.css({
+        'width': '80px',
+        'display': 'block'
+    });
+
+    unlockBtn.click(function() {
+        // Remove any warning messages
+        $(this).parents('.ui-tabs-panel').find('.ui-state-error').remove();
+
+        // If an ip and password is given
+        var ip = $('#' + newTabId + ' input[name=ip]').css('border', 'solid #BDBDBD 1px');
+        var password = $( '#' + newTabId + ' input[name=password]').css('border', 'solid #BDBDBD 1px' );
+        if ( password.val() && ip.val() ) {
+            $('#' + statBarId).find('img').show();
+            // Setup SSH keys for a non-node
+            $.ajax( {
+                url : 'lib/cmd.php',
+                dataType : 'json',
+                data : {
+                    cmd : 'webrun',
+                    tgt : '',
+                    args : 'unlockbyip;' + tgtNodes + ';' + password.val() + ";" + ip.val(),
+                    msg : 'out=' + statBarId + ';cmd=unlock;tgt=' + tgtNodes
+                },
+
+                success : updateStatusBar
+            });
+
+            // Show status bar
+            statBar.show();
+        } else {
+            // Show warning message
+            var warn = createWarnBar('Both ip address and password must be specified.');
+            warn.prependTo($(this).parents('.ui-tabs-panel'));
+            password.css('border', 'solid #FF0000 1px');
+        }
+    });
+
+    unlockNonNodesForm.append(unlockBtn);
+
+    // Create 'SSH Key' fieldset
+    var sshKey = '';
+    fs = $( '<fieldset></fieldset>' );
+    legend = $( '<legend>xCAT Management Node Public Key</legend>' );
+    fs.append( legend );
+    unlockNonNodesForm.append( fs );
+
+    // Create key bar, hide on load
+    var keyBarId = 'unlockNonNodesKeyBar' + instance;
+    var keyBar = createStatusBar(keyBarId).hide();
+    unlockNonNodesForm.append( keyBar );
+
+    // Generate tooltips
+    unlockNonNodesForm.find('div input[title]').tooltip({
+        position: "center right",
+        offset: [-2, 10],
+        effect: "fade",
+        opacity: 0.7,
+        predelay: 800,
+        events : {
+            def : "mouseover,mouseout",
+            input : "mouseover,mouseout",
+            widget : "focus mouseover,blur mouseout",
+            tooltip : "mouseover,mouseout"
+        }
+    });
+
+    /**
+     * "Get Key" button
+     */
+    var getBtn = createButton('Get Key');
+    getBtn.css({
+        'width': '80px',
+        'display': 'block'
+    });
+
+    getBtn.click(function() {
+        // Remove any warning messages
+        $(this).parents('.ui-tabs-panel').find('.ui-state-error').remove();
+
+        // Get the SSH keys for a non-node
+        $.ajax( {
+            url : 'lib/cmd.php',
+            dataType : 'json',
+            data : {
+                cmd  : 'webrun',
+                tgt  : '',
+                args : 'unlockshow;' + tgtNodes + ';key;',
+                msg  : 'out=' + statBarId + ';keyBar=' + keyBarId +';cmd=unlock;tgt=' + tgtNodes
+            },
+
+                success : updateKeyBar
+            });
+
+            // Show status bar
+            statBar.show();
+    });
+
+    unlockNonNodesForm.append(getBtn);
+
+    tab.add(newTabId, 'Unlock System', unlockNonNodesForm, true);
+    tab.select(newTabId);
+}
+
+
+/**
+ * Update key and status bar of a given tab
+ * 
+ * @param data Data returned from HTTP request
+ */
+function updateKeyBar(data) {
+    // Get ajax response
+    var rsp = data.rsp;
+    var args = data.msg.split(';');
+    var statBarId = args[0].replace('out=', '');
+    var keyBarId = args[1].replace('keyBar=', '');
+    var cmd = args[2].replace('cmd=', '');
+    var tgts = args[3].replace('tgt=', '').split(',');
+
+    $('#' + statBarId).find('img').hide();
+
+    // Extract the key portion and status portions from the response
+    var keyRespStart = rsp[0].indexOf("<keyFile>");
+    var keyRespEnd = rsp[0].indexOf("</keyFile>");;
+    var keyOnly = rsp[0].substring( keyRespStart+9, keyRespEnd );
+    var statLines = rsp[0].substring( 0, keyRespStart-1 );
+
+    if ( keyOnly.length > 0 ) {
+        // Expected response was returned, show it in the key bar.
+        var keyLines = keyOnly.split(/\n/);
+        for ( var i in keyLines ) {
+            $('#' + keyBarId).find( 'div' ).append( keyLines[i] );
+            $('#' + keyBarId).find( 'div' ).append( '<br/>' );
+        }
+        $('#' + keyBarId).show();
+
+        // Other lines from the response are shown in the Status bar.
+        if ( statLines.length > 0 ) {
+            prg = statLines.split(/\n/);
+            prg = writeRsp( prg, '' );
+            $('#' + statBarId).find( 'div' ).append( prg );
+        }
+    } else {
+        // Did not find the expected response, write the ajax response to status bar.
+        var prg = writeRsp(rsp, '');
+        $('#' + statBarId).find('div').append(prg);
+    }
+
+}
+
+
+/**
+ * Update the script and status bar of a given tab
+ * 
+ * @param data Data returned from HTTP request
+ */
+function updateScriptBar(data) {
+    // Get ajax response
+    var rsp = data.rsp;
+    var args = data.msg.split(';');
+    var statBarId = args[0].replace('out=', '');
+    var scriptBarId = args[1].replace('scriptBar=', '');
+    var cmd = args[2].replace('cmd=', '');
+    var tgts = args[3].replace('tgt=', '').split(',');
+
+    $('#' + statBarId).find('img').hide();
+
+    // Extract the key portion and status portions from the response
+    var scriptRespStart = rsp[0].indexOf("<scriptFile>");
+    var scriptRespEnd = rsp[0].indexOf("</scriptFile>");;
+    var scriptOnly = rsp[0].substring( scriptRespStart+12, scriptRespEnd );
+    var statLines = rsp[0].substring( 0, scriptRespStart-1 );
+
+    if ( scriptOnly.length > 0 ) {
+        // Expected response was returned, show it in the script bar along with the rest of the code.
+        var scriptLines = scriptOnly.split(/\n/);
+        for ( var i in scriptLines ) {
+            scriptLines[i] = scriptLines[i].replace(/^\s\s\s\s\s\s\s\s+/gm, '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
+            scriptLines[i] = scriptLines[i].replace(/^\s\s\s\s\s\s+/gm, '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
+            scriptLines[i] = scriptLines[i].replace(/^\s\s\s\s+/gm, '&nbsp;&nbsp;&nbsp;&nbsp;');
+            scriptLines[i] = scriptLines[i].replace(/^\s\s+/gm, '&nbsp;&nbsp;');
+            $('#' + scriptBarId).find( 'div' ).append( scriptLines[i] + '<br/>' );
+        }
+        $('#' + scriptBarId).show();
+
+        // Other lines from the response are shown in the Status bar.
+        if ( statLines.length > 0 ) {
+            prg = statLines.split(/\n/);
+            prg = writeRsp( prg, '' );
+            $('#' + statBarId).find( 'div' ).append( prg );
+        }
+    } else {
+        // Did not find the expected response, write the ajax response to status bar.
+        var prg = writeRsp(rsp, '');
+        $('#' + statBarId).find('div').append(prg);
+    }
+
+}
+
+
 /**
  * Load script page
  * 
@@ -1831,7 +2370,7 @@ function loadScriptPage(tgtNodes) {
 
     // Create info bar
     var infoBar = createInfoBar('Load a script to run against this node range.');
-    scriptForm.append(statBar, infoBar);
+    scriptForm.append(infoBar, statBar);
     
     // Create VM fieldset
     var vmFS = $('<fieldset></fieldset>');
@@ -2032,7 +2571,7 @@ function loadDeletePage(tgtNodes) {
     
     // Confirm delete
     var instr = $('<p>Are you sure you want to delete <b>' + tgtNodesStr + '</b>?</p>').css('word-wrap', 'break-word');
-    var dbOnly = $('<div><input type="checkbox" name="db-only"/>Only delete entries in database</div>');
+    var dbOnly = $('<div><input type="checkbox" name="db-only" checked/>Only delete entries in database</div>');
     confirmAttr.append(instr);
     confirmAttr.append(dbOnly);
 
@@ -2046,8 +2585,8 @@ function loadDeletePage(tgtNodes) {
         if ($("#" + newTabId + " input[name='db-only']").attr('checked')) {
             cmd = "noderm";
         }
-        
-        // Delete the virtual server
+
+        // Delete the virtual server or remove the node.
         $.ajax( {
             url : 'lib/cmd.php',
             dataType : 'json',
@@ -2121,6 +2660,7 @@ function updateStatusBar(data) {
     } else if (cmd == 'xdsh') {
         // Hide loader
         $('#' + statBarId).find('img').hide();
+        $('#' + statBarId).find('#loadingpic2').remove();
         
         // Write ajax response to status bar
         var prg = $('<pre></pre>');
@@ -2130,9 +2670,23 @@ function updateStatusBar(data) {
             }
 
             prg.append(rsp[i]);
-            prg.append('<br>');    
+            prg.append('<br>');
         }
-        $('#' + statBarId).find('div').append(prg);    
+        $('#' + statBarId).find('div').append(prg);
+        $('#' + statBarId).find('div').append('<hr>');
+
+        // The status area division contains useful scrollTop() and "scrollHeight dom 0" information.
+        // The inner div grows in height along with the status bar scroll height
+        // The status area client does not grow, that is the visible scroll area
+        var scrtop = $('#' + statBarId ).scrollTop();
+        var scrheight = $('#' + statBarId )[0].scrollHeight;
+        var dcheight = $('#' + statBarId)[0].clientHeight;
+        var dcheight2 = $('#' + statBarId).find('div')[0].clientHeight;
+
+        // Adjust the scroll bar to move to the bottom
+        if (scrtop < (scrheight-dcheight)) {
+            $('#' + statBarId ).scrollTop(scrheight-dcheight);
+        }
         
         // Enable fields
         $('#' + statBarId).parent().find('input').removeAttr('disabled');
@@ -2217,6 +2771,25 @@ function runScript(inst) {
     var script = $('#' + tabId + ' textarea').val();
     
     var statBarId = 'scriptStatusBar' + inst;
+
+    // The status area division contains useful scrollTop() and "scrollHeight dom 0" information.
+    // The inner div grows in height along with the status bar scroll height
+    // The status area client does not grow, that is the visible scroll area
+    var scrtop = $('#' + statBarId ).scrollTop();
+    var scrheight = $('#' + statBarId )[0].scrollHeight;
+    var dcheight = $('#' + statBarId)[0].clientHeight;
+    var dcheight2 = $('#' + statBarId).find('div')[0].clientHeight;
+
+    //If this is not first time for run script and it has scrolled then add a progress gif at the end.
+    if (scrheight > dcheight) {
+        $('#'+statBarId).find('div').append("<img id='loadingpic2' src='images/loader.gif'>");
+        scrtop = $('#' + statBarId ).scrollTop();
+        scrheight = $('#' + statBarId )[0].scrollHeight;
+        dcheight = $('#' + statBarId)[0].clientHeight;
+        // Scroll down so gif shows
+        $('#' + statBarId ).scrollTop(scrheight-dcheight);
+    }
+
     $('#' + statBarId).show();                    // Show status bar
     $('#' + statBarId + ' img').show();           // Show loader
     $('#' + statBarId + ' p').remove();           // Clear status bar
@@ -2755,6 +3328,366 @@ function setNodeAttrs(data) {
     } // End of for
 }
 
+
+/**
+ * Load the discover z/VM virtual systems page
+ * 
+ * @param tgtNode Target node to set properties
+ */
+function discoverVMNodes(tgtNodes) {
+    var fs, legend, htmlLine;
+
+    // Get nodes tab
+    var tab = getNodesTab();
+
+    // Generate new tab ID
+    var inst = 0;
+    var newTabId = 'discoverVMNodesTab' + inst;
+    while ($('#' + newTabId).length) {
+        // If one already exists, generate another one
+        inst = inst + 1;
+        newTabId = 'discoverVMNodesTab' + inst;
+    }
+
+    // Open new tab
+    // Create set properties form
+    var discoverVMNodesForm = $('<div class="form"></div>');
+
+    // Create info bar
+    var infoBar = createInfoBar( 'Initiate, stop or query the status of z/VM node discovery. ' +
+        'To initiate discovery, specify discovery parameters and click on the Discover button. ' +
+        'To stop an on-going discovery related to a z/VM host, specify the host node name and '+
+        'click on the Stop button. ' +
+        'To obtain the status of discovery for a particular host, specify the host node name and '+
+        'click on the Stop button.'
+        );
+    discoverVMNodesForm.append(infoBar);
+
+    // Create the status bar and hide it.
+    var statBarId = 'statusBar_' + newTabId;
+    //var statBar = $( '<div id="'+statBarId+'"></div>' );
+    //discoverVMNodesForm.append( statBar );
+    statBar = createStatusBar( statBarId );
+    statBar.hide();
+    discoverVMNodesForm.append( statBar );
+
+    // Create Host fieldset
+    fs = $('<fieldset></fieldset>');
+    legend = $('<legend>z/VM Host</legend>');
+    fs.append(legend);
+    discoverVMNodesForm.append(fs);
+
+    // Target node or group
+    htmlLine = $('<div><label>z/VM host range:</label><input type="text" name="hosts" value="' + tgtNodes + '" title="The node or node range of the z/VM hosts to run discovery."/></div>');
+    discoverVMNodesForm.append( htmlLine );
+    
+    // Create Discovery Parameters fieldset
+    fs = $('<fieldset></fieldset>');
+    legend = $('<legend>Discovery Parameters</legend>');
+    fs.append( legend );
+    discoverVMNodesForm.append( fs );
+
+    // Create an input for each definable attribute
+    var div, label, input, descr, value;
+
+    // Define DefineTo radio buttons
+    div = $('<div></div>').css( 'display', 'inline-block' ).css( 'vertical-align', 'top' );
+    div.append( '<label>Define systems to:</label>' );
+    div.append( '<li><input type="radio" value="both" name="defineTo" checked>xCAT and OpenStack</li>' );
+    div.append( '<li><input type="radio" value="xcatonly" name="defineTo">xCAT only</li>' );
+    div.append( '<li><input type="radio" value="openstackonly" name="defineTo">OpenStack only (only already discovered xCAT nodes)</li>' );
+    discoverVMNodesForm.append( div );
+    discoverVMNodesForm.append( '<br>' );
+    
+    // Userid filter
+    divUserid = newTabId + "_divUserid";
+    div = $('<div id=' + divUserid + '></div>').css( 'display', 'inline-table' ).css( 'vertical-align', 'top' );
+    div.append( '<label>z/VM Userid Filter:</label>' );
+    div.append( '<input type="text" size="80" title="Regular expression indicating z/VM userids to be considered for discovery.  For example: &quot;virt1|virt2|lnx.*&quot; selects userids: virt1, virt2 and any userid beginning with lnx" placeholder="z/VM userid filter information" value="" name="useridFilter">' ).css( 'margin-top', '5px' );
+    discoverVMNodesForm.append( div );
+    discoverVMNodesForm.append( '<br>' );
+
+    // IP address filter
+    divIP = newTabId + "_divIP";
+    div = $('<div id=' + divIP + '></div>').css( 'display', 'inline-table' ).css( 'vertical-align', 'top' );
+    div.append( '<label>IP Address Filter:</label>' );
+    div.append( '<input type="text" size="80" title="Regular expression indicating IP addresses to be considered for discovery.  For example: &quot;9.47.45..*|10.10.10..*&quot; selects IP addresses in the 9.47.45.xxx subnet and the 10.10.10.xxx subnet." placeholder="IP address filter information" value="" name="ipFilter">' ).css( 'margin-top', '5px' );
+    discoverVMNodesForm.append( div );
+    discoverVMNodesForm.append( '<br>' );
+
+    // Group name input
+    divGroup = newTabId + '_divGroup';
+    div = $('<div id=' + divGroup + '></div>').css( 'display', 'inline-table' ).css( 'vertical-align', 'top' );
+    div.append( '<label>Assign to group(s):</label>' );
+    div.append( '<input type="text" title="The group ID or IDs to assign to the discovered nodes." placeholder="group IDs" value="all" name="group">' ).css( 'margin-top', '5px' );
+    discoverVMNodesForm.append( div );
+    discoverVMNodesForm.append( '<br>' );
+
+    // Node Name Format input
+    divNodename = newTabId + '_divNodename';
+    div = $('<div id=' + divNodename + '></div>').css( 'display', 'inline-table' ).css( 'vertical-align', 'top' );
+    div.append( '<label>xCAT node name format:</label>' );
+    div.append( '<input type="text" size="40" title="The node name format to be used by xCAT when assigning a name to the discovered systems." placeholder="Nodename template, e.g. node#NNN" value="" name="nodeNameFmt">' ).css( 'margin-top', '5px' );
+    discoverVMNodesForm.append( div );
+    discoverVMNodesForm.append( '<br>' );
+    discoverVMNodesForm.find('#' + divNodename).hide();
+
+    // OpenStack operand input
+    divOpenStackOps = newTabId + '_divOpenStackOps';
+    div = $('<div id=' + divOpenStackOps + '></div>').css( 'display', 'inline-table' ).css( 'vertical-align', 'top' );
+    div.append( '<label>Assign to OpenStack Project:</label>' );
+    div.append( '<input type="text" title="The OpenStack project to assign the instances." placeholder="OpenStack project" value="" name="openStackProj">' ).css( 'margin-top', '5px' );
+    div.append( '<br>' );
+    div.append( '<label>Assign to OpenStack User:</label>' );
+    div.append( '<input type="text" title="The OpenStack user to assign the instances." placeholder="OpenStack user" value="" name="openStackUser">' ).css( 'margin-top', '5px' );
+    discoverVMNodesForm.append( div );
+    discoverVMNodesForm.append( '<br>' );
+    
+    // Define Verbose radio buttons
+    div = $('<div></div>').css( 'display', 'inline-table' ).css( 'vertical-align', 'top' ).css( 'text-align', 'top' );
+    div.append( '<label>Node discovery output:</label>' );
+    div.append( '<li><input type="radio" value="no" name="verbose" checked>Normal response, showing only important information</li>' );
+    div.append( '<li><input type="radio" value="yes" name="verbose">Verbose response, normal response plus additional information (e.g. reason a system is ignored)</li>' );
+    discoverVMNodesForm.append( div );
+    discoverVMNodesForm.append( '<br>' );
+
+    // Generate tooltips
+    discoverVMNodesForm.find('div input[title]').tooltip({
+        position: "center right",
+        offset: [-2, 10],
+        effect: "fade",
+        opacity: 0.8,
+        delay: 0,
+        predelay: 800,
+        events: {
+              def:     "mouseover,mouseout",
+              input:   "mouseover,mouseout",
+              widget:  "focus mouseover,blur mouseout",
+              tooltip: "mouseover,mouseout"
+        }
+    });
+
+    // Show appropriate input fields for defineto choices.
+    discoverVMNodesForm.change(function(){
+          var defineTo = $(this).parent().find('input[name="defineTo"]:checked').val();
+          if ( defineTo == 'both' ) {
+              discoverVMNodesForm.find('#' + divUserid).show();
+              discoverVMNodesForm.find('#' + divIP).show();
+              discoverVMNodesForm.find('#' + divGroup).show();
+              discoverVMNodesForm.find('#' + divOpenStackOps).show();
+              discoverVMNodesForm.find('#' + divNodename).hide();
+          } else if ( defineTo == 'xcatonly' ) {
+              discoverVMNodesForm.find('#' + divUserid).show();
+              discoverVMNodesForm.find('#' + divIP).show();
+              discoverVMNodesForm.find('#' + divGroup).show();
+              discoverVMNodesForm.find('#' + divOpenStackOps).hide();
+              discoverVMNodesForm.find('#' + divNodename).show();
+          } else if ( defineTo == 'openstackonly' ) {
+              discoverVMNodesForm.find('#' + divUserid).hide();
+              discoverVMNodesForm.find('#' + divIP).hide();
+              discoverVMNodesForm.find('#' + divGroup).hide();
+              discoverVMNodesForm.find('#' + divOpenStackOps).show();
+              discoverVMNodesForm.find('#' + divNodename).hide();
+          }
+    });
+
+
+    // Discover nodes button action
+    var discoverBtn = createButton('Discover');
+    discoverBtn.click(function() {
+        var argList = '';
+        var filter = '';
+
+        var hosts = $(this).parent().find('input[name=hosts]').val();
+        if ( hosts != '' ) {
+            argList = 'zvmhost=' + hosts;
+        }
+
+        var defineTo = $(this).parent().find('input[name="defineTo"]:checked').val();
+        argList = argList + '||defineto=' + defineTo;
+
+        var verbose = $(this).parent().find('input[name="verbose"]:checked').val();
+        if ( verbose == 'yes' ) {
+            argList = argList + '||--verbose';
+        }
+
+        var useridFilter = $(this).parent().find('input[name=useridFilter]').val();
+        if (( defineTo == 'both' || defineTo == 'xcatonly' ) && ( useridFilter != '' )) {
+            argList = argList + '||useridfilter=' + useridFilter;
+        }
+
+        var ipFilter = $(this).parent().find('input[name=ipFilter]').val();
+        if (( defineTo == 'both' || defineTo == 'xcatonly' ) && ( ipFilter != '' )) {
+            argList = argList + '||ipfilter=' + ipFilter;
+        }
+
+        var group = $(this).parent().find('input[name=group]').val();
+        if (( defineTo == 'both' || defineTo == 'xcatonly' ) && ( group != '' )) {
+            argList = argList + '||groups=' + group;
+        }
+
+        var nodeNameFmt = $(this).parent().find('input[name=nodeNameFmt]').val();
+        if ( defineTo == 'xcatonly' &&  nodeNameFmt != '' ) {
+            argList = argList + '||nodenameformat=' + nodeNameFmt;
+        }
+
+        var openStackProj = $(this).parent().find('input[name=openStackProj]').val();
+        var openStackUser = $(this).parent().find('input[name=openStackUser]').val();
+        if ((( defineTo == 'both' ) || ( defineTo == 'openstackonly' )) && 
+            (( openStackProj != '' ) || ( openStackUser != '' ))) {
+            if ( openStackProj != '' ) {
+                osArgs = '--project ' + openStackProj;
+            } else {
+                osArgs = '';
+            }
+            if ( openStackUser != '' ) {
+                if ( osArgs != '' ) {
+                    osArgs = osArgs + ' --user ' + openStackUser;
+                } else {
+                    osArgs = '--user ' + openStackUser;
+                }
+            }
+            argList = argList + "||openstackoperands='" + osArgs + "'";
+        }
+
+        var out = $('<p></p>');
+        out.append( 'Starting node discovery...' );
+        out.append( '<br>' );
+        out.append( 'If node discovery is a short running task then its response will follow.  If, however, the time it takes to complete discovery exceeds the http request timeout of a few minutes then the discovery response will not be returned to the browser.  The status and list buttons can be used to obtained status on the discovery and see what systems have been discovered.' );
+        $( '#' + statBarId ).find( 'div' ).append( out );
+        statBar.show();
+
+        $.ajax( {
+            url : 'lib/cmd.php',
+            dataType : 'json',
+            data : {
+                cmd  : 'nodediscoverstart',
+                tgt  : '',
+                args : argList,
+                att  : '',
+                msg  : statBarId
+            },
+            success: function(data) {
+                updateDiscoverStatusBar( data, 1 );
+            }
+        });
+
+    });
+    discoverVMNodesForm.append(discoverBtn);
+
+    // Status button
+    var statusBtn = createButton('Status');
+    statusBtn.click( function() {
+        var hosts = $(this).parent().find('input[name=hosts]').val();
+        var out = $('<p></p>');
+        out.append( 'Querying status for discovery on ' + hosts + '...' );
+        out.append( '<br>' );
+        $( '#' + statBarId ).find( 'div' ).append( out );
+
+        $.ajax( {
+            url : 'lib/cmd.php',
+            dataType : 'json',
+            data : {
+                cmd  : 'nodediscoverstatus',
+                tgt  : '',
+                args : '--zvmhost||' + hosts,
+                att  : '',
+                msg  : statBarId
+            },
+            success: function(data) {
+                updateDiscoverStatusBar( data, 1 );
+            }
+        });
+
+    });
+    discoverVMNodesForm.append( statusBtn );
+
+    // List button
+    var listBtn = createButton('List');
+    listBtn.click( function() {
+        var hosts = $(this).parent().find('input[name=hosts]').val();
+        var out = $('<p></p>');
+        out.append( 'Listing systems discovered by the latest discovery on ' + hosts + '...' );
+        out.append( '<br>' );
+        $( '#' + statBarId ).find( 'div' ).append( out );
+        
+        $.ajax( {
+            url : 'lib/cmd.php',
+            dataType : 'json',
+            data : {
+                cmd  : 'nodediscoverls',
+                tgt  : '',
+                args : '-t||zvm||--zvmhost||' + hosts,
+                att  : '',
+                msg  : statBarId
+            },
+            success: function(data) {
+                updateDiscoverStatusBar( data, 1 );
+            }
+        });
+    });
+    discoverVMNodesForm.append( listBtn );
+
+    // Stop button
+    var stopBtn = createButton('Stop');
+    stopBtn.click(function() {
+        var hosts = $(this).parent().find('input[name=hosts]').val();
+        var out = $('<p></p>');
+        out.append( 'Stopping discovery on ' + hosts + '...' );
+        out.append( '<br>' );
+        $( '#' + statBarId ).find( 'div' ).append( out );
+        
+        $.ajax( {
+            url : 'lib/cmd.php',
+            dataType : 'json',
+            data : {
+                cmd  : 'nodediscoverstop',
+                tgt  : '',
+                args : '--zvmhost||' + hosts,
+                att  : '',
+                msg  : statBarId
+            },
+            success: function(data) {
+                updateDiscoverStatusBar( data, 1 );
+            }
+        });
+    });
+    discoverVMNodesForm.append( stopBtn );
+
+    // Append to discover tab
+    tab.add(newTabId, 'Discover', discoverVMNodesForm, true);
+
+    // Select new tab
+    tab.select(newTabId);
+}
+
+
+/**
+ * Update discovery status bar
+ * 
+ * @param data Data returned from HTTP request
+ */
+function updateDiscoverStatusBar( data, preformatted ) {
+    var statBarId = data.msg;
+    var rsp = data.rsp;
+    var statBar = $( '#' + statBarId );
+
+    // Go through response to make it readable in the status bar.
+    var out = $('<p></p>');
+    for ( var i in rsp ) {
+        if ( preformatted == 1 ) {
+            out.append( '<pre>' + rsp[i] + '</pre>' );
+        } else {
+            out.append( rsp[i] + '<br>' );
+        }
+    }
+
+    // Write response to status bar and show the bar.
+    $( '#' + statBarId ).find( 'div' ).append( out );
+    statBar.show();
+}
+
+
 /**
  * Load set node properties page
  * 
@@ -3249,30 +4182,44 @@ function advancedLoad(group){
         hcps[val] = 1;
     }
 
+    if (Object.keys(hcps).length == 0) {
+        openDialog('warn', "No node found with hcp column filled in and 390 arch!");
+        return;
+    }
+    // Get Nodes info bar 
+    //var nodeInfoBar = getNodesTabInfoBar();
+    //nodeInfoBar.append("\nEntering Advanced Load...\n")
+
     var args;
     var shortzHcps = new Array();
+    var zhcpHash = new Object();
     for (var h in hcps) {
         // Get node without domain name
         args = h.split('.');
-        shortzHcps.push(args[0]);
-        
-        // If there are no disk pools or network names cookie for this hcp
-        if (!$.cookie(args[0] + 'diskpools') || !$.cookie(args[0] + 'networks')) {
-            // Check if SMAPI is online
-            $.ajax({
-                url : 'lib/cmd.php',
-                dataType : 'json',
-                data : {
-                    cmd : 'lsvm',
-                    tgt : args[0],
-                    args : '',
-                    msg : 'group=' + group + ';hcp=' + args[0]
-                },
 
-                // Load hardware control point specific info
-                // Get disk pools and network names
-                success : loadHcpInfo
-            });
+        if (!zhcpHash[args[0]]) {
+
+            shortzHcps.push(args[0]);
+            zhcpHash[args[0]] = 1;
+            
+            // If there are no disk pools or network names cookie for this hcp
+            if (!$.cookie(args[0] + 'diskpools') || !$.cookie(args[0] + 'networks')) {
+                // Check if SMAPI is online
+                $.ajax({
+                    url : 'lib/cmd.php',
+                    dataType : 'json',
+                    data : {
+                        cmd : 'lsvm',
+                        tgt : args[0],
+                        args : '',
+                        msg : 'group=' + group + ';hcp=' + args[0]
+                    },
+
+                    // Load hardware control point specific info
+                    // Get disk pools and network names
+                    success : loadHcpInfo
+                });
+            }
         }
     } // End of for
     

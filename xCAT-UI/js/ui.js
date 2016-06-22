@@ -1,8 +1,11 @@
 /**
  * Tab constructor
  * 
- * @param tabId Tab ID
- * @param tabName Tab name
+ * @param tabId
+ *            Tab ID
+ * @param tabName
+ *            Tab name
+ * @return Nothing
  */
 var Tab = function(tabId) {
     this.tabId = tabId;
@@ -160,7 +163,7 @@ Table.prototype.init = function(headers) {
     var headRow = $('<tr></tr>');
 
     // Append headers
-    for (var i in headers) {
+    for ( var i in headers) {
         headRow.append('<th>' + headers[i] + '</th>');
     }
 
@@ -192,7 +195,7 @@ Table.prototype.add = function(rowCont) {
 
     // Create a column for each content
     var tableCol;
-    for (var i in rowCont) {
+    for ( var i in rowCont) {
         tableCol = $('<td></td>');
         tableCol.append(rowCont[i]);
         tableRow.append(tableCol);
@@ -246,7 +249,7 @@ DataTable.prototype.init = function(headers) {
     var headRow = $('<tr></tr>');
 
     // Append headers
-    for (var i in headers) {
+    for ( var i in headers) {
         headRow.append('<th>' + headers[i] + '</th>');
     }
 
@@ -278,7 +281,7 @@ DataTable.prototype.add = function(rowCont) {
 
     // Create a column for each content
     var tableCol;
-    for (var i in rowCont) {
+    for ( var i in rowCont) {
         tableCol = $('<td></td>');
         tableCol.append(rowCont[i]);
         tableRow.append(tableCol);
@@ -467,11 +470,11 @@ function initPage() {
     // Load jQuery stylesheets
     includeCss("css/jquery.dataTables.css");
     includeCss("css/superfish.css");
-    // includeCss("css/jstree.css");
+    includeCss("css/jstree.css");
     includeCss("css/jquery.jqplot.css");
     
     // Load custom stylesheet
-    includeCss("css/style.css");
+    includeCss("css/style.css");    
     
     // JQuery plugins
     includeJs("js/jquery/jquery.dataTables.min.js");
@@ -480,14 +483,11 @@ function initPage() {
     includeJs("js/jquery/jquery.contextmenu.min.js");
     includeJs("js/jquery/superfish.min.js");
     includeJs("js/jquery/hoverIntent.min.js");
-    // includeJs("js/jquery/jquery.jstree.min.js");
+    includeJs("js/jquery/jquery.jstree.min.js");
     includeJs("js/jquery/tooltip.min.js");
     includeJs("js/jquery/jquery.serverBrowser.min.js");
     includeJs("js/jquery/jquery.jqplot.min.js");
     includeJs("js/jquery/jqplot.pieRenderer.min.js");
-    includeJs("js/jquery/jqplot.barRenderer.min.js");
-    includeJs("js/jquery/jqplot.pointLabels.min.js");
-    includeJs("js/jquery/jqplot.categoryAxisRenderer.min.js");
     includeJs("js/jquery/jqplot.dateAxisRenderer.min.js");
     includeJs("js/jquery/jquery.topzindex.min.js");
     
@@ -498,12 +498,7 @@ function initPage() {
     includeJs("js/provision/provision.js");
     
     // Custom plugins
-    includeJs("js/custom/esx.js");
-    includeJs("js/custom/kvm.js");
-    includeJs("js/custom/blade.js");
-    includeJs("js/custom/ipmi.js");
     includeJs("js/custom/zvm.js");
-    includeJs("js/custom/hmc.js");
     includeJs("js/custom/customUtils.js");
 
     // Enable settings link     
@@ -565,21 +560,15 @@ function initPage() {
     $("#content").children().remove();
     if (page == 'configure.php') {
         includeJs("js/configure/update.js");
-        includeJs("js/configure/discover.js");
         includeJs("js/configure/service.js");
         includeJs("js/configure/users.js");
+        includeJs("js/configure/files.js");
         headers.eq(1).css(style);
         loadConfigPage();
     } else if (page == 'provision.php') {
         includeJs("js/provision/images.js");
         headers.eq(2).css(style);
         loadProvisionPage();
-    } else if (page == 'monitor.php') {
-        includeJs("js/monitor/xcatmon.js");
-        includeJs("js/monitor/rmcmon.js");
-        includeJs("js/monitor/gangliamon.js");
-        headers.eq(3).css(style);
-        loadMonitorPage();
     } else if (page == 'help.php') {
         includeJs("js/help/help.js");
         headers.eq(4).css(style);
@@ -589,8 +578,6 @@ function initPage() {
         includeJs("js/nodes/nodeset.js");
         includeJs("js/nodes/rnetboot.js");
         includeJs("js/nodes/updatenode.js");
-        includeJs("js/nodes/physical.js");
-        includeJs("js/nodes/mtm.js");
         includeJs("js/nodes/rscan.js");
         headers.eq(0).css(style);
         loadNodesPage();

@@ -478,6 +478,11 @@ legend {
 	color: #FF0000;
 }
 
+#zNetworkDataTable.datatable td {
+    vertical-align: top;
+    text-align: top;
+}
+
 /*--- Editable column ---*/
 .tab .datatable textarea {
 	font: 12px sans-serif;

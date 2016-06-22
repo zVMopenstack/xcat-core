@@ -267,53 +267,7 @@ function updateNodesetStatus(data) {
             $('#' + statBarId).find('div').append('<pre>/etc/hosts updated</pre>');
         }
 
-        // Update DNS
-        $.ajax( {
-            url : 'lib/cmd.php',
-            dataType : 'json',
-            data : {
-                cmd : 'makedns',
-                tgt : '',
-                args : '',
-                msg : 'cmd=makedns;inst=' + inst
-            },
-
-            success : updateNodesetStatus
-        });
-    }
-
-    /**
-     * (5) Update DHCP
-     */
-    else if (cmd == 'makedns') {
-        // Write ajax response to status bar
-        var prg = writeRsp(rsp, '');    
-        $('#' + statBarId).find('div').append(prg);    
-        
-        // Update DHCP
-        $.ajax( {
-            url : 'lib/cmd.php',
-            dataType : 'json',
-            data : {
-                cmd : 'makedhcp',
-                tgt : '',
-                args : '-a',
-                msg : 'cmd=makedhcp;inst=' + inst
-            },
-
-            success : updateNodesetStatus
-        });
-    }
-
-    /**
-     * (6) Prepare node for boot
-     */
-    else if (cmd == 'makedhcp') {
-        // Write ajax response to status bar
-        var prg = writeRsp(rsp, '');    
-        $('#' + statBarId).find('div').append(prg);    
-
-        // Prepare node for boot
+        // Go straight to prepare node for boot
         $.ajax( {
             url : 'lib/cmd.php',
             dataType : 'json',
@@ -329,7 +283,7 @@ function updateNodesetStatus(data) {
     }
 
     /**
-     * (7) Boot node from network
+     * (5) Boot node from network
      */
     else if (cmd == 'nodeset') {
         // Write ajax response to status bar

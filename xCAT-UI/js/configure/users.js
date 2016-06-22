@@ -335,33 +335,34 @@ function openCreateUserDialog(data) {
                 // Handle cases where there are value or no value
                 if (host) {
                     args += " policy.host='" + host + "'";
-                } else {
-                	args += " policy.host=''";
-                }
+                } 
+                //else {
+                //	args += " policy.host=''";
+                //}
                 
                 if (parameters) {
                     args += " policy.parameters='" + parameters + "'";
-                } else {
-                	args += " policy.parameters=''";
-                }
+                }// else {
+                //	args += " policy.parameters=''";
+                //}
                 
                 if (nodeRange) {
                     args += " policy.noderange='" + nodeRange + "'";
-                } else {
-                	args += " policy.noderange=''";
-                }
+                }// else {
+                //	args += " policy.noderange=''";
+                //}
 
                 if (comments) {
                     args += " policy.comments='" + comments + "'";
-                } else {
-                	args += " policy.comments=''";
-                }
+                }// else {
+                //	args += " policy.comments=''";
+                //}
                 
                 if (commands) {
                     args += " policy.commands='" + commands + "'";
-                } else {
-                	args += " policy.commands=''";
-                }
+                }// else {
+                //	args += " policy.commands=''";
+                //}
                 
                 // Trim any extra spaces
                 args = jQuery.trim(args);  
