@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "baa041b7_f1b51d7e",
+        "filename": "xCAT-UI/js/configure/configure.js",
+        "patchSetId": 1
+      },
+      "lineNbr": 113,
+      "author": {
+        "id": 1008499
+      },
+      "writtenOn": "2016-06-29T18:46:42Z",
+      "side": 1,
+      "message": "Do we want this to apply to all platforms ? \nIf not, don\u0027t we need an alternate path here just for the z version of xCAT ?",
+      "range": {
+        "startLine": 104,
+        "startChar": 0,
+        "endLine": 113,
+        "endChar": 9
+      },
+      "revId": "340524b30fd1bb273030766d78cd509e497d4e06",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
