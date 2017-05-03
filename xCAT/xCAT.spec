@@ -28,9 +28,6 @@ Conflicts: xCATsn
 Requires: perl-DBD-SQLite
 Requires: xCAT-client = 4:%{version}-%{release}
 Requires: xCAT-server = 4:%{version}-%{release}
-Requires: xCAT-probe  = 4:%{version}-%{release}
-Requires: xCAT-genesis-scripts-x86_64 = 1:%{version}-%{release}
-Requires: xCAT-genesis-scripts-ppc64  = 1:%{version}-%{release}
 
 %define pcm %(if [ "$pcm" = "1" ];then echo 1; else echo 0; fi)
 %define notpcm %(if [ "$pcm" = "1" ];then echo 0; else echo 1; fi)
@@ -41,6 +38,13 @@ Requires: xCAT-genesis-scripts-ppc64  = 1:%{version}-%{release}
 # Define a different location for various httpd configs in s390x mode
 %define httpconfigdir %(if [ "$s390x" = "1" ];then echo "xcathttpdsave"; else echo "xcat"; fi)
 
+%if %nots390x
+Requires: xCAT-probe  = 4:%{version}-%{release}
+Requires: xCAT-genesis-scripts-x86_64 = 1:%{version}-%{release}
+Requires: xCAT-genesis-scripts-ppc64  = 1:%{version}-%{release}
+%endif
+
+
 %ifos linux
 Requires: httpd nfs-utils nmap bind perl(CGI)
 # on RHEL7, need to specify it explicitly
@@ -50,7 +54,7 @@ Requires: /usr/bin/killall
 Requires: /usr/sbin/dhcpd
 # On RHEL this pulls in openssh-server, on SLES it pulls in openssh
 Requires: /usr/bin/ssh
-%ifnarch s390x
+%if %nots390x
 Requires: /etc/xinetd.d/tftp
 Requires: xCAT-buildkit
 # Stty is only needed for rcons on ppc64 nodes, but for mixed clusters require it on both x and p
@@ -61,7 +65,7 @@ Requires: perl-IO-Stty
 # The aix rpm cmd forces us to do this outside of ifos type stmts
 %if %notpcm
 %ifos linux
-%ifnarch s390x
+%if %nots390x
 # PCM does not use or ship conserver
 Requires: conserver-xcat
 %endif
@@ -69,7 +73,7 @@ Requires: conserver-xcat
 %endif
 
 #support mixed cluster
-%ifnarch s390x
+%if %nots390x
 Requires: elilo-xcat xnba-undi
 %endif
 
@@ -86,7 +90,9 @@ Requires: ipmitool-xcat >= 1.8.17-1
 
 %if %notpcm
 # PCM does not need or ship syslinux-xcat
+%if %nots390x
 Requires: syslinux-xcat
+%endif
 %endif
 
 %description
